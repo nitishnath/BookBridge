@@ -1,22 +1,9 @@
-import { FC, ChangeEvent, useState } from "react";
+import { FC, ChangeEvent, useState, useEffect } from "react";
 import "./App.css";
 import { Button, TextField } from "@mui/material";
-
-interface NavLink {
-  href: string;
-  label: string;
-}
-
-interface Book {
-  title: string;
-  author: string;
-  imageUrl: string;
-}
-
-interface UserProfile {
-  email: string;
-  avatarUrl: string;
-}
+import { useNavigate } from "react-router-dom";
+import { NavLink, Book } from "./utils/interfaces";
+import { useAuth } from "./utils/AuthContext";
 
 const navLinks: NavLink[] = [
   { href: "#home", label: "Home" },
@@ -49,13 +36,23 @@ const bestPicksBooks: Book[] = [
   },
 ];
 
-const userProfile: UserProfile = {
-  email: "user@bookpoint.com",
-  avatarUrl: "../images/user-logo.png",
-};
+// const userProfile: UserProfile = {
+//   email: "user@bookpoint.com",
+//   avatarUrl: "../images/user-logo.png",
+// };
 
 const App: FC = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const { user, isAuthenticated, logout } = useAuth();
+
+  useEffect(() => {
+    // If user is authenticated, they can optionally be redirected to the home page
+    if (isAuthenticated) {
+      // Uncomment if you want to auto-redirect authenticated users
+      // navigate('/home');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>): void => {
     setSearchQuery(e.target.value);
@@ -70,6 +67,24 @@ const App: FC = () => {
     console.log("Searching for:", searchQuery);
   };
 
+  const handleLoginClick = (): void => {
+    navigate("/login");
+  };
+
+  const handleProfileClick = (): void => {
+    navigate("/home");
+  };
+
+  const handleLogout = async (): Promise<void> => {
+    try {
+      await logout();
+      // Optional: navigate to landing page after logout
+      // navigate('/');
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   return (
     <div className="app">
       <header className="header">
@@ -80,7 +95,7 @@ const App: FC = () => {
             className="book-logo"
           />
           {/* More sophisticated, could work well for new and used books */}
-          <h1 className="brand">BookBridge</h1>
+          <h1 className="text-2xl font-bold text-brand">BookBridge</h1>
         </div>
         <nav className="nav-links">
           {navLinks.map((link) => (
@@ -89,14 +104,47 @@ const App: FC = () => {
             </a>
           ))}
         </nav>
-        <div className="user-section">
-          <Button className="notification-btn" aria-label="Notifications">
+        <div className="flex items-center gap-4">
+          {/* <Button className="notification-btn" aria-label="Notifications">
             🔔
-          </Button>
-          <div className="user-profile">
+          </Button> */}
+          {/* <div className="user-profile">
             <img src={userProfile.avatarUrl} alt="User" className="avatar" />
             <span className="user-email">{userProfile.email}</span>
-          </div>
+          </div> */}
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleProfileClick}
+              >
+                My Books
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+              {user?.profilePicture && (
+                <img
+                  src={user.profilePicture}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full"
+                />
+              )}
+            </div>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleLoginClick}
+            >
+              Login
+            </Button>
+          )}
         </div>
       </header>
 
@@ -203,7 +251,9 @@ const App: FC = () => {
                 find special deals that make reading more affordable. Shop now
                 and unlock more savings with every purchase!
               </p>
-              <button className="explore-btn">Explore More</button>
+              <button className="explore-btn" onClick={() => navigate("/home")}>
+                Explore More
+              </button>
             </div>
             <div className="stats-numbers">
               <div className="stat-item">
